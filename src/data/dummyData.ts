@@ -23,6 +23,7 @@ export const navItems: NavItem[] = [
   { id: 'inventory', label: 'Inventario', icon: Package },
   { id: 'billing', label: 'Facturación', icon: Receipt },
   { id: 'reports', label: 'Reportes', icon: BarChart3 },
+  
   { id: 'settings', label: 'Configuración', icon: Settings }
 ];
 

@@ -6,7 +6,8 @@ import { DashboardCard } from './components/DashboardCard';
 import { RecentOrders } from './components/RecentOrders';
 import { QuickActions } from './components/QuickActions';
 import { SectionPlaceholder } from './components/SectionPlaceholder';
-import { ClienteList } from './components/ClienteList';
+import { OrderList } from './components/orders/OrderList';
+import { ClienteList } from './components/clients/ClienteList';
 import {
   navItems,
   dashboardCards,
@@ -65,9 +66,13 @@ function App() {
               <ClienteList />
             </div>
           )}
-
+          {activeSection === 'orders' && (
+            <div className="max-w-7xl mx-auto">
+              <OrderList />
+            </div>
+          )}
           {/* Fallback para otras secciones */}
-          {activeSection !== 'dashboard' && activeSection !== 'clients' && (
+          {activeSection !== 'dashboard' && activeSection !== 'clients' &&  activeSection !== 'orders' && (
             <SectionPlaceholder activeSection={activeSection} navItems={navItems} />
           )}
         </main>

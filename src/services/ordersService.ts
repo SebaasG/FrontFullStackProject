@@ -1,5 +1,5 @@
 // src/services/orders.ts
-import api from '../services/Api';
+import api from './Api';
 import { Order } from '../types';
 
 export const getOrders = async (): Promise<Order[]> => {

@@ -29,10 +29,27 @@ export interface QuickAction {
   color: string;
 }
 
-export interface Cliente {
-  id: number;
-  nombre: string;
-  correo: string;
-  telefono: string;
-  direccion: string;
+export interface Client {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address?: string;
+  createdAt: string;
+  vehicles: Vehicle[];
+}
+
+
+
+export interface Vehicle {
+  id: string;
+  clientId: string;
+  brand: string;
+  model: string;
+  year: number;
+  vin: string;
+  licensePlate: string;
+  mileage: number;
+  color?: string;
+  createdAt: string;
 }
