@@ -14,7 +14,7 @@ export const ClienteList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Usa tu token real aquí
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW5AdGFsbGVyLmNvbSIsImV4cCI6MTc1MDk5NjAwNiwiaXNzIjoiQXBpU2d0YSIsImF1ZCI6IkFwaVNndGFVc2VycyJ9.nKnVND1OaXjUIhiVdk9bAp8QsSjfDFX9Tk9Eljr4K3k"
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYWRtaW5AdGFsbGVyLmNvbSIsImV4cCI6MTc1MTAzMDM2MiwiaXNzIjoiQXBpU2d0YSIsImF1ZCI6IkFwaVNndGFVc2VycyJ9.LWOQsguBTTNd-bryWdHtYfw2xzBp8vKdw6W7TjBmB2Q"
 
 useEffect(() => {
   const fetchClients = async () => {
@@ -24,6 +24,7 @@ useEffect(() => {
       const response = await axios.get('http://localhost:5105/api/cliente', {
         headers: {
           Authorization: `Bearer ${token}`,
+
         },
       });
 

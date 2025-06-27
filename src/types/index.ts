@@ -14,12 +14,33 @@ export interface DashboardCard {
   color: string;
 }
 
-export interface Order {
+export type OrderStatus = 'En Proceso' | 'Completada' | 'Pendiente' | 'Cancelada';
+
+export interface Part {
   id: string;
-  client: string;
-  vehicle: string;
-  status: 'En Progreso' | 'Completado' | 'Pendiente';
-  time: string;
+  name: string;
+  quantity: number;
+  totalPrice: number;
+}
+
+export interface WorkLogEntry {
+  date: string;
+  note: string;
+}
+
+export interface ServiceOrder {
+  id: string;
+  clientId: string;
+  vehicleId: string;
+  mechanicId?: string;
+  description: string;
+  status: OrderStatus;
+  laborCost: number;
+  totalCost: number;
+  createdAt: string;
+  updatedAt: string;
+  parts: Part[];
+  workLog: WorkLogEntry[];
 }
 
 export interface QuickAction {
