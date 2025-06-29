@@ -1,28 +1,67 @@
-import React from 'react'
-import { Bell, Search } from 'lucide-react'
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Bell, Search, User, Settings } from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
 
-export const Header: React.FC = () => {
+const Header: React.FC = () => {
+  const { user, role } = useAuth();
+
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center flex-1 max-w-lg">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Buscar clientes, vehículos, órdenes..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative">
-            <Bell className="w-6 h-6" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
-        </div>
+    <motion.header
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="h-16 glass border-b border-white/10 flex items-center justify-between px-8"
+    >
+      {/* Search */}
+      <div className="flex-1 max-w-md">
+        <Input
+          placeholder="Buscar..."
+          icon={<Search className="w-5 h-5" />}
+          variant="glass"
+          className="bg-white/5"
+        />
       </div>
-    </header>
-  )
-}
+
+      {/* Right Section */}
+      <div className="flex items-center gap-4">
+        {/* Notifications */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="relative p-2 text-white/70 hover:text-white transition-colors"
+        >
+          <Bell className="w-6 h-6" />
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent-orange rounded-full" />
+        </motion.button>
+
+        {/* Settings */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="p-2 text-white/70 hover:text-white transition-colors"
+        >
+          <Settings className="w-6 h-6" />
+        </motion.button>
+
+        {/* User Profile */}
+        <motion.div
+          className="flex items-center gap-3 glass px-4 py-2 rounded-lg"
+          whileHover={{ scale: 1.02 }}
+        >
+          <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-sm">
+            <p className="text-white font-medium">{user?.nombre || 'Usuario'}</p>
+            <p className="text-white/60">{role}</p>
+          </div>
+        </motion.div>
+      </div>
+    </motion.header>
+  );
+};
+
+export default Header;

@@ -1,89 +1,136 @@
-import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import React from 'react';
+import { motion } from 'framer-motion';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
   Car, 
   Wrench, 
-  Package, 
   FileText, 
+  Package, 
+  Settings, 
+  LogOut,
+  Plus,
+  ClipboardList,
   Shield,
-  LogOut
-} from 'lucide-react'
-import { useAuth } from '../../contexts/AuthContext'
+  DollarSign,
+  Activity
+} from 'lucide-react';
+import { useAuth } from '../../auth/AuthContext';
+import { UserRole } from '../../types';
+import toast from 'react-hot-toast';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['Admin', 'Mecánico', 'Recepcionista'] },
-  { name: 'Clientes', href: '/clients', icon: Users, roles: ['Admin', 'Recepcionista'] },
-  { name: 'Vehículos', href: '/vehicles', icon: Car, roles: ['Admin', 'Recepcionista'] },
-  { name: 'Órdenes de Servicio', href: '/service-orders', icon: Wrench, roles: ['Admin', 'Mecánico', 'Recepcionista'] },
-  { name: 'Repuestos', href: '/parts', icon: Package, roles: ['Admin', 'Mecánico'] },
-  { name: 'Facturas', href: '/invoices', icon: FileText, roles: ['Admin', 'Mecánico'] },
-  { name: 'Auditoría', href: '/audit', icon: Shield, roles: ['Admin'] },
-]
+interface SidebarProps {
+  userRole: UserRole;
+}
 
-export const Sidebar: React.FC = () => {
-  const location = useLocation()
-  const { user, logout, hasRole } = useAuth()
+const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
-  const filteredNavigation = navigation.filter(item => 
-    item.roles.some(role => hasRole(role))
-  )
+  const handleLogout = () => {
+    logout();
+    toast.success('Sesión cerrada correctamente');
+    navigate('/login');
+  };
+
+  const getMenuItems = () => {
+    switch (userRole) {
+      case 'Admin':
+        return [
+          { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+          { icon: Users, label: 'Usuarios', path: '/admin/usuarios' },
+          { icon: Users, label: 'Clientes', path: '/admin/clientes' },
+          { icon: Car, label: 'Vehículos', path: '/admin/vehiculos' },
+          { icon: Wrench, label: 'Órdenes', path: '/admin/ordenes' },
+          { icon: Package, label: 'Repuestos', path: '/admin/repuestos' },
+          { icon: DollarSign, label: 'Facturas', path: '/admin/facturas' },
+          { icon: Settings, label: 'Tipos de Servicio', path: '/admin/tipos-servicio' },
+          { icon: Activity, label: 'Auditoría', path: '/admin/auditoria' },
+        ];
+      case 'Recepcionista':
+        return [
+          { icon: Plus, label: 'Crear Orden', path: '/recepcion/crear-orden' },
+          { icon: Users, label: 'Clientes', path: '/recepcion/clientes' },
+          { icon: Car, label: 'Vehículos', path: '/recepcion/vehiculos' },
+          { icon: Wrench, label: 'Órdenes', path: '/recepcion/ordenes' },
+        ];
+      case 'Mecánico':
+        return [
+          { icon: Wrench, label: 'Mis Órdenes', path: '/mecanico/ordenes' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   return (
-    <div className="flex flex-col w-64 bg-white border-r border-gray-200 h-full">
-      <div className="flex items-center px-6 py-4 border-b border-gray-200">
-        <Wrench className="w-8 h-8 text-blue-600 mr-3" />
-        <div>
-          <h1 className="text-lg font-bold text-gray-900">TallerPro</h1>
-          <p className="text-sm text-gray-500">Sistema de Gestión</p>
-        </div>
-      </div>
-
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {filteredNavigation.map((item) => {
-          const isActive = location.pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={`
-                flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
-                ${isActive 
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }
-              `}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="px-4 py-4 border-t border-gray-200">
-        <div className="flex items-center px-3 py-2 mb-2">
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-            <span className="text-sm font-medium text-blue-700">
-              {user?.firstName.charAt(0)}{user?.lastName.charAt(0)}
-            </span>
+    <motion.div
+      initial={{ x: -300 }}
+      animate={{ x: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="fixed left-0 top-0 h-full w-64 glass border-r border-white/20 z-30"
+    >
+      {/* Logo */}
+      <div className="p-6 border-b border-white/10">
+        <motion.div
+          className="flex items-center gap-3"
+          whileHover={{ scale: 1.05 }}
+        >
+          <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+            <Wrench className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900">
-              {user?.firstName} {user?.lastName}
-            </p>
-            <p className="text-xs text-gray-500">{user?.role}</p>
+            <h1 className="text-white font-bold text-lg neon-text">
+              Taller Pro
+            </h1>
+            <p className="text-white/60 text-sm">{userRole}</p>
           </div>
-        </div>
-        <button
-          onClick={logout}
-          className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
-        >
-          <LogOut className="w-5 h-5 mr-3" />
-          Cerrar Sesión
-        </button>
+        </motion.div>
       </div>
-    </div>
-  )
-}
+
+      {/* Navigation */}
+      <nav className="p-4 space-y-2">
+        {menuItems.map((item, index) => (
+          <motion.div
+            key={item.path}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <NavLink
+              to={item.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  isActive
+                    ? 'bg-gradient-primary text-white shadow-neon'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`
+              }
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="font-medium">{item.label}</span>
+            </NavLink>
+          </motion.div>
+        ))}
+      </nav>
+
+      {/* Logout */}
+      <div className="absolute bottom-4 left-4 right-4">
+        <motion.button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-red-500/20 rounded-lg transition-all duration-300"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">Cerrar Sesión</span>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+};
+
+export default Sidebar;
