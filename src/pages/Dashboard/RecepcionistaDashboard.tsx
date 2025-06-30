@@ -4,7 +4,7 @@ import RecepcionistaLayout from '../../layouts/RecepcionistaLayout';
 import CrearOrden from './CrearOrden';
 import ClientesReadOnly from '../Recepcion/ClientesReadOnly';
 import VehiculosReadOnly from '../Recepcion/VehiculosReadOnly';
-import OrdenesReadOnly from '../Recepcion/OrdenesReadOnly';
+import OrdenesManagement from '../Recepcion/OrdenesManagement';
 
 const RecepcionistaDashboard: React.FC = () => {
   return (
@@ -13,7 +13,7 @@ const RecepcionistaDashboard: React.FC = () => {
         <Route path="crear-orden" element={<CrearOrden />} />
         <Route path="clientes" element={<ClientesReadOnly />} />
         <Route path="vehiculos" element={<VehiculosReadOnly />} />
-        <Route path="ordenes" element={<OrdenesReadOnly />} />
+        <Route path="ordenes" element={<OrdenesManagement />} />
         <Route path="" element={<CrearOrden />} />
       </Routes>
     </RecepcionistaLayout>

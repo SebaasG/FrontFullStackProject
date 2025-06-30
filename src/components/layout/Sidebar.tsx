@@ -51,9 +51,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
       case 'Recepcionista':
         return [
           { icon: Plus, label: 'Crear Orden', path: '/recepcion/crear-orden' },
-          { icon: Users, label: 'Clientes', path: '/recepcion/clientes' },
-          { icon: Car, label: 'Vehículos', path: '/recepcion/vehiculos' },
-          { icon: Wrench, label: 'Órdenes', path: '/recepcion/ordenes' },
+          { icon: Wrench, label: 'Gestionar Órdenes', path: '/recepcion/ordenes' },
+          { icon: Users, label: 'Consultar Clientes', path: '/recepcion/clientes' },
+          { icon: Car, label: 'Consultar Vehículos', path: '/recepcion/vehiculos' },
         ];
       case 'Mecánico':
         return [
