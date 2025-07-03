@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, User, Phone, Mail, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Phone, Mail, FileText, Eye } from 'lucide-react';
 import { clientesAPI } from '../../api/clientes';
 import { ClienteResponse, ClienteRequest } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -16,6 +17,8 @@ const ClientesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<ClienteResponse | null>(null);
   const [editingCliente, setEditingCliente] = useState<ClienteResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<ClienteRequest>({
@@ -138,6 +141,11 @@ const ClientesPage: React.FC = () => {
       correo: cliente.correo,
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewDetails = (cliente: ClienteResponse) => {
+    setSelectedCliente(cliente);
+    setIsDetalleModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -345,11 +353,18 @@ const ClientesPage: React.FC = () => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleEdit(cliente)}
+                    onClick={() => handleViewDetails(cliente)}
                     className="flex-1"
                   >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Editar
+                    <Eye className="w-4 h-4 mr-1" />
+                    Ver
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleEdit(cliente)}
+                  >
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="danger"
@@ -438,6 +453,17 @@ const ClientesPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedCliente(null);
+        }}
+        cliente={selectedCliente || undefined}
+        type="cliente"
+      />
     </motion.div>
   );
 };

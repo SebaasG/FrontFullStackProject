@@ -6,7 +6,9 @@ import { OrdenServicioResponse } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
 
@@ -15,6 +17,8 @@ const OrdenesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedOrden, setSelectedOrden] = useState<OrdenServicioResponse | null>(null);
 
   useEffect(() => {
     loadOrdenes();
@@ -69,6 +73,11 @@ const OrdenesPage: React.FC = () => {
       console.error('❌ Error actualizando estado:', error);
       toast.error('Error al actualizar estado');
     }
+  };
+
+  const handleViewDetails = (orden: OrdenServicioResponse) => {
+    setSelectedOrden(orden);
+    setIsDetalleModalOpen(true);
   };
 
   const getEstadoColor = (estado: string) => {
@@ -261,10 +270,7 @@ const OrdenesPage: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm border flex items-center gap-2 ${getEstadoColor(orden.estado)}`}>
-                      {getEstadoIcon(orden.estado)}
-                      {orden.estado}
-                    </span>
+                    <StatusBadge status={orden.estado as any} />
                   </div>
                 </div>
 
@@ -333,7 +339,11 @@ const OrdenesPage: React.FC = () => {
                     )}
                   </div>
                   
-                  <Button variant="secondary" size="sm">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => handleViewDetails(orden)}
+                  >
                     <Eye className="w-4 h-4 mr-1" />
                     Ver Detalles
                   </Button>
@@ -343,6 +353,17 @@ const OrdenesPage: React.FC = () => {
           ))}
         </motion.div>
       )}
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedOrden(null);
+        }}
+        orden={selectedOrden || undefined}
+        type="orden"
+      />
     </motion.div>
   );
 };

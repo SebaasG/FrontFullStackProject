@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, User, Shield, Mail, Phone, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Shield, Mail, Phone, FileText, Eye } from 'lucide-react';
 import { usuariosAPI } from '../../api/usuarios';
 import { UsuarioResponse, UsuarioRequest } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -16,10 +17,12 @@ const UsuariosPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedUsuario, setSelectedUsuario] = useState<UsuarioResponse | null>(null);
   const [editingUsuario, setEditingUsuario] = useState<UsuarioResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<UsuarioRequest>({
-    rolUsuarioId: 1,
+    rolUsuarioId: 3, // Por defecto Recepcionista (según tu BD: ID 3)
     nombre: '',
     correo: '',
     password: '',
@@ -60,6 +63,14 @@ const UsuariosPage: React.FC = () => {
         toast.info('No hay usuarios registrados');
       } else {
         console.log(`✅ ${usuariosData.length} usuarios cargados correctamente`);
+        
+        // Debug: Mostrar distribución de roles
+        const roleDistribution = usuariosData.reduce((acc, u) => {
+          acc[u.rolUsuarioId] = (acc[u.rolUsuarioId] || 0) + 1;
+          return acc;
+        }, {} as Record<number, number>);
+        console.log('📊 Distribución de roles:', roleDistribution);
+        console.log('📊 Roles: 1=Admin, 2=Mecánico, 3=Recepcionista');
       }
     } catch (error: any) {
       console.error('❌ Error cargando usuarios:', error);
@@ -116,6 +127,7 @@ const UsuariosPage: React.FC = () => {
     try {
       setSubmitting(true);
       console.log('💾 Guardando usuario:', formData);
+      console.log('🎯 Rol seleccionado:', formData.rolUsuarioId, '(1=Admin, 2=Mecánico, 3=Recepcionista)');
       
       if (editingUsuario) {
         await usuariosAPI.update(editingUsuario.id, formData);
@@ -155,6 +167,11 @@ const UsuariosPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleViewDetails = (usuario: UsuarioResponse) => {
+    setSelectedUsuario(usuario);
+    setIsDetalleModalOpen(true);
+  };
+
   const handleDelete = async (id: number) => {
     if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
       try {
@@ -171,7 +188,7 @@ const UsuariosPage: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      rolUsuarioId: 1,
+      rolUsuarioId: 3, // Por defecto Recepcionista (según tu BD: ID 3)
       nombre: '',
       correo: '',
       password: '',
@@ -187,36 +204,49 @@ const UsuariosPage: React.FC = () => {
     usuario.rolUsuarioNombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'Admin':
+  const getRoleColor = (rolId: number) => {
+    switch (rolId) {
+      case 1: // Admin
         return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'Mecánico':
+      case 2: // Mecánico
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'Recepcionista':
+      case 3: // Recepcionista
         return 'bg-green-500/20 text-green-400 border-green-500/30';
       default:
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'Admin':
+  const getRoleIcon = (rolId: number) => {
+    switch (rolId) {
+      case 1: // Admin
         return <Shield className="w-4 h-4" />;
-      case 'Mecánico':
+      case 2: // Mecánico
         return <User className="w-4 h-4" />;
-      case 'Recepcionista':
+      case 3: // Recepcionista
         return <User className="w-4 h-4" />;
       default:
         return <User className="w-4 h-4" />;
     }
   };
 
-  // Estadísticas
-  const adminCount = usuarios.filter(u => u.rolUsuarioNombre === 'Admin').length;
-  const mecanicoCount = usuarios.filter(u => u.rolUsuarioNombre === 'Mecánico').length;
-  const recepcionistaCount = usuarios.filter(u => u.rolUsuarioNombre === 'Recepcionista').length;
+  const getRoleName = (rolId: number) => {
+    switch (rolId) {
+      case 1:
+        return 'Admin';
+      case 2:
+        return 'Mecánico';
+      case 3:
+        return 'Recepcionista';
+      default:
+        return 'Desconocido';
+    }
+  };
+
+  // Estadísticas CORREGIDAS según tu BD
+  const adminCount = usuarios.filter(u => u.rolUsuarioId === 1).length; // Admin = 1
+  const mecanicoCount = usuarios.filter(u => u.rolUsuarioId === 2).length; // Mecánico = 2
+  const recepcionistaCount = usuarios.filter(u => u.rolUsuarioId === 3).length; // Recepcionista = 3
 
   if (loading) {
     return (
@@ -258,6 +288,31 @@ const UsuariosPage: React.FC = () => {
           Nuevo Usuario
         </Button>
       </div>
+
+      {/* Debug Info */}
+      <Card variant="glass" className="p-4 bg-blue-500/10 border-blue-500/20">
+        <h3 className="text-blue-300 font-semibold mb-2">🔧 Distribución de Roles:</h3>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="text-blue-200">Admin (ID: 1):</span>
+            <span className={`ml-2 font-bold ${adminCount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {adminCount}
+            </span>
+          </div>
+          <div>
+            <span className="text-blue-200">Mecánico (ID: 2):</span>
+            <span className={`ml-2 font-bold ${mecanicoCount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {mecanicoCount}
+            </span>
+          </div>
+          <div>
+            <span className="text-blue-200">Recepcionista (ID: 3):</span>
+            <span className={`ml-2 font-bold ${recepcionistaCount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {recepcionistaCount}
+            </span>
+          </div>
+        </div>
+      </Card>
 
       {/* Search */}
       <Card variant="glass" className="p-6">
@@ -367,9 +422,9 @@ const UsuariosPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <span className={`px-3 py-1 rounded-full text-xs border flex items-center gap-1 ${getRoleColor(usuario.rolUsuarioNombre)}`}>
-                    {getRoleIcon(usuario.rolUsuarioNombre)}
-                    {usuario.rolUsuarioNombre}
+                  <span className={`px-3 py-1 rounded-full text-xs border flex items-center gap-1 ${getRoleColor(usuario.rolUsuarioId)}`}>
+                    {getRoleIcon(usuario.rolUsuarioId)}
+                    {getRoleName(usuario.rolUsuarioId)}
                   </span>
                 </div>
 
@@ -392,11 +447,18 @@ const UsuariosPage: React.FC = () => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleEdit(usuario)}
+                    onClick={() => handleViewDetails(usuario)}
                     className="flex-1"
                   >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Editar
+                    <Eye className="w-4 h-4 mr-1" />
+                    Ver
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleEdit(usuario)}
+                  >
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="danger"
@@ -423,15 +485,15 @@ const UsuariosPage: React.FC = () => {
         title={editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Nombre Completo *"
+            value={formData.nombre}
+            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+            placeholder="Juan Pérez García"
+            required
+          />
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Nombre Completo *"
-              value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              placeholder="Juan Pérez García"
-              required
-            />
-            
             <Input
               label="Correo Electrónico *"
               type="email"
@@ -440,9 +502,7 @@ const UsuariosPage: React.FC = () => {
               placeholder="usuario@taller.com"
               required
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
             <Input
               label="Documento *"
               value={formData.documento}
@@ -451,7 +511,9 @@ const UsuariosPage: React.FC = () => {
               maxLength={10}
               required
             />
-            
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Teléfono *"
               value={formData.telefono}
@@ -459,9 +521,7 @@ const UsuariosPage: React.FC = () => {
               placeholder="3001234567"
               required
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
             <div>
               <label className="block text-sm font-medium text-white/90 mb-2">
                 Rol *
@@ -472,21 +532,26 @@ const UsuariosPage: React.FC = () => {
                 className="w-full px-4 py-3 rounded-lg border bg-white/10 border-white/20 text-white focus:border-primary-electric focus:ring-2 focus:ring-primary-electric/50"
                 required
               >
-                <option value={1} className="bg-gray-800">Admin</option>
-                <option value={2} className="bg-gray-800">Recepcionista</option>
-                <option value={3} className="bg-gray-800">Mecánico</option>
+                <option value={1} className="bg-gray-800">Admin (ID: 1)</option>
+                <option value={2} className="bg-gray-800">Mecánico (ID: 2)</option>
+                <option value={3} className="bg-gray-800">Recepcionista (ID: 3)</option>
               </select>
+              <div className="mt-2 text-xs text-white/60">
+                <p>• <strong>Admin (ID: 1)</strong> - Control total del sistema</p>
+                <p>• <strong>Mecánico (ID: 2)</strong> - Ver y actualizar órdenes asignadas</p>
+                <p>• <strong>Recepcionista (ID: 3)</strong> - Crear órdenes y gestionar clientes</p>
+              </div>
             </div>
-            
-            <Input
-              label={editingUsuario ? "Nueva Contraseña (opcional)" : "Contraseña *"}
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="••••••••"
-              required={!editingUsuario}
-            />
           </div>
+
+          <Input
+            label={editingUsuario ? "Nueva Contraseña (opcional)" : "Contraseña *"}
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            placeholder="••••••••"
+            required={!editingUsuario}
+          />
 
           <div className="flex gap-4 pt-4">
             <Button
@@ -514,6 +579,17 @@ const UsuariosPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedUsuario(null);
+        }}
+        usuario={selectedUsuario || undefined}
+        type="usuario"
+      />
     </motion.div>
   );
 };

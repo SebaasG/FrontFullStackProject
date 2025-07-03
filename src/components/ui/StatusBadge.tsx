@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 
-export type StatusType = 'pendiente' | 'en_proceso' | 'completado' | 'cancelado';
+export type StatusType = 'pendiente' | 'en_proceso' | 'completado' | 'cancelado' | 'Pendiente' | 'En Proceso' | 'Completada' | 'Cancelada';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -16,7 +16,17 @@ const statusConfig = {
     icon: AlertCircle, 
     label: 'Pendiente' 
   },
+  Pendiente: { 
+    color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', 
+    icon: AlertCircle, 
+    label: 'Pendiente' 
+  },
   en_proceso: { 
+    color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', 
+    icon: Clock, 
+    label: 'En Proceso' 
+  },
+  'En Proceso': { 
     color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', 
     icon: Clock, 
     label: 'En Proceso' 
@@ -26,10 +36,20 @@ const statusConfig = {
     icon: CheckCircle, 
     label: 'Completado' 
   },
+  Completada: { 
+    color: 'bg-green-500/20 text-green-400 border-green-500/30', 
+    icon: CheckCircle, 
+    label: 'Completada' 
+  },
   cancelado: { 
     color: 'bg-red-500/20 text-red-400 border-red-500/30', 
     icon: XCircle, 
     label: 'Cancelado' 
+  },
+  Cancelada: { 
+    color: 'bg-red-500/20 text-red-400 border-red-500/30', 
+    icon: XCircle, 
+    label: 'Cancelada' 
   }
 };
 
@@ -44,7 +64,18 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   size = 'md', 
   showIcon = true 
 }) => {
-  const config = statusConfig[status];
+  // Normalizar el estado para manejar diferentes formatos
+  const normalizedStatus = status?.toString().toLowerCase().replace(/\s+/g, '_') as keyof typeof statusConfig;
+  
+  // Obtener configuración, con fallback para estados desconocidos
+  const config = statusConfig[status as keyof typeof statusConfig] || 
+                 statusConfig[normalizedStatus] || 
+                 {
+                   color: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+                   icon: AlertCircle,
+                   label: status?.toString() || 'Desconocido'
+                 };
+
   const IconComponent = config.icon;
 
   return (

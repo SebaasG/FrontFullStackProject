@@ -50,11 +50,36 @@ export const usuariosAPI = {
     console.log('✅ Usuario eliminado');
   },
 
+  // SOLUCIÓN DEFINITIVA: Usar consulta SQL directa como sugeriste
   getMecanicos: async (): Promise<UsuarioResponse[]> => {
     try {
-      console.log('🔄 Obteniendo mecánicos...');
+      console.log('🔄 Obteniendo SOLO mecánicos (rolUsuarioId = 2)...');
       
-      // Obtener todos los usuarios y filtrar por rol de mecánico
+      // OPCIÓN 1: Intentar endpoint específico para mecánicos
+      try {
+        const response = await api.get('/api/Usuario/mecanicos');
+        console.log('✅ Mecánicos obtenidos desde endpoint específico:', response.data);
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (endpointError) {
+        console.log('⚠️ Endpoint específico no disponible, usando filtro SQL...');
+      }
+
+      // OPCIÓN 2: Usar parámetro de consulta SQL (como sugeriste)
+      try {
+        const response = await api.get('/api/Usuario?rolUsuarioId=2');
+        console.log('✅ Mecánicos obtenidos con parámetro rolUsuarioId=2:', response.data);
+        const mecanicosSql = Array.isArray(response.data) ? response.data : 
+                            response.data?.data ? response.data.data : [];
+        
+        if (mecanicosSql.length > 0) {
+          console.log('🎉 Mecánicos encontrados con SQL:', mecanicosSql.map(m => `${m.nombre} (ID: ${m.id})`));
+          return mecanicosSql;
+        }
+      } catch (sqlError) {
+        console.log('⚠️ Consulta SQL no disponible, usando filtro frontend...');
+      }
+
+      // OPCIÓN 3: Filtro manual ESTRICTO en frontend (fallback)
       const todosUsuarios = await this.getAll();
       console.log('📦 Todos los usuarios obtenidos:', todosUsuarios);
       console.log('📋 Detalle de usuarios:', todosUsuarios.map(u => ({ 
@@ -64,29 +89,37 @@ export const usuariosAPI = {
         rolUsuarioNombre: u.rolUsuarioNombre 
       })));
       
-      // Filtrar mecánicos según tus datos: rolUsuarioId = 2
+      // FILTRO ESTRICTO: SOLO rolUsuarioId === 2 (Mecánico)
       const mecanicos = todosUsuarios.filter(usuario => {
-        const esMecanico = usuario.rolUsuarioId === 2 || 
-                          usuario.rolUsuarioNombre === 'Mecánico' ||
-                          usuario.rolUsuarioNombre?.toLowerCase().includes('mecánico') ||
-                          usuario.rolUsuarioNombre?.toLowerCase().includes('mecanico');
-        
-        console.log(`👤 Usuario ${usuario.nombre}: rolId=${usuario.rolUsuarioId}, rolNombre="${usuario.rolUsuarioNombre}", esMecanico=${esMecanico}`);
+        const esMecanico = usuario.rolUsuarioId === 2;
+        console.log(`👤 Usuario ${usuario.nombre}: rolId=${usuario.rolUsuarioId}, esMecanico=${esMecanico}`);
         return esMecanico;
       });
       
-      console.log('🔧 Mecánicos filtrados:', mecanicos);
+      console.log('🔧 Mecánicos filtrados ESTRICTAMENTE (rolUsuarioId = 2):', mecanicos);
       console.log('🔧 Mecánicos encontrados:', mecanicos.map(m => ({ 
         id: m.id, 
         nombre: m.nombre, 
-        correo: m.correo 
+        correo: m.correo,
+        rolUsuarioId: m.rolUsuarioId
       })));
+      
+      if (mecanicos.length === 0) {
+        console.warn('⚠️ No se encontraron mecánicos con rolUsuarioId = 2');
+        console.log('💡 SOLUCIÓN BACKEND: Crear endpoint GET /api/Usuario/mecanicos que ejecute:');
+        console.log('   SELECT * FROM usuarios WHERE rolUsuarioId = 2;');
+        console.log('💡 Usuarios disponibles por rol:');
+        const usuariosPorRol = todosUsuarios.reduce((acc, u) => {
+          acc[u.rolUsuarioId] = acc[u.rolUsuarioId] || [];
+          acc[u.rolUsuarioId].push(u.nombre);
+          return acc;
+        }, {} as Record<number, string[]>);
+        console.log(usuariosPorRol);
+      }
       
       return mecanicos;
     } catch (error) {
       console.error('❌ Error obteniendo mecánicos:', error);
-      
-      // En caso de error, devolver array vacío para que se maneje en el componente
       return [];
     }
   },

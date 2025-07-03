@@ -4,7 +4,9 @@ import { Search, Car, User, Calendar, Eye } from 'lucide-react';
 import { vehiculosAPI } from '../../api/vehiculos';
 import { VehiculoResponse } from '../../types';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -13,6 +15,8 @@ const VehiculosReadOnly: React.FC = () => {
   const [vehiculos, setVehiculos] = useState<VehiculoResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedVehiculo, setSelectedVehiculo] = useState<VehiculoResponse | null>(null);
 
   useEffect(() => {
     loadVehiculos();
@@ -24,29 +28,11 @@ const VehiculosReadOnly: React.FC = () => {
       console.log('🔄 Cargando vehículos (solo lectura)...');
       
       const response = await vehiculosAPI.getAll();
-      console.log('📦 Respuesta API vehículos:', response);
+      console.log('✅ Vehículos cargados:', response.length);
+      setVehiculos(response);
       
-      // Manejar diferentes estructuras de respuesta del backend
-      let vehiculosData: VehiculoResponse[] = [];
-      
-      if (Array.isArray(response)) {
-        vehiculosData = response;
-      } else if (response.data && Array.isArray(response.data)) {
-        vehiculosData = response.data;
-      } else if (response.items && Array.isArray(response.items)) {
-        vehiculosData = response.items;
-      } else {
-        console.warn('⚠️ Estructura de respuesta inesperada:', response);
-        vehiculosData = [];
-      }
-      
-      console.log('✅ Vehículos procesados:', vehiculosData);
-      setVehiculos(vehiculosData);
-      
-      if (vehiculosData.length === 0) {
+      if (response.length === 0) {
         toast.info('No hay vehículos registrados');
-      } else {
-        console.log(`✅ ${vehiculosData.length} vehículos cargados correctamente`);
       }
     } catch (error: any) {
       console.error('❌ Error cargando vehículos:', error);
@@ -55,6 +41,11 @@ const VehiculosReadOnly: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewDetails = (vehiculo: VehiculoResponse) => {
+    setSelectedVehiculo(vehiculo);
+    setIsDetalleModalOpen(true);
   };
 
   const filteredVehiculos = vehiculos.filter(vehiculo =>
@@ -94,13 +85,14 @@ const VehiculosReadOnly: React.FC = () => {
             Consulta de Vehículos
           </h1>
           <p className="text-white/70 mt-2">
-            Consulta el registro de vehículos ({vehiculos.length} registrados)
+            Vista de solo lectura para recepcionistas ({vehiculos.length} vehículos)
           </p>
         </div>
         
-        <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
-          <Eye className="w-5 h-5 text-primary-electric" />
-          <span className="text-white font-medium">Solo Lectura</span>
+        {/* Indicador de Solo Lectura */}
+        <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg border-accent-orange/30">
+          <Eye className="w-5 h-5 text-accent-orange" />
+          <span className="text-accent-orange font-medium">Solo Lectura</span>
         </div>
       </div>
 
@@ -176,7 +168,7 @@ const VehiculosReadOnly: React.FC = () => {
           <p className="text-white/60">
             {searchTerm 
               ? 'Intenta ajustar los términos de búsqueda'
-              : 'Los vehículos registrados aparecerán aquí'
+              : 'Los vehículos aparecerán aquí cuando sean registrados por un administrador'
             }
           </p>
         </Card>
@@ -217,17 +209,33 @@ const VehiculosReadOnly: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
-                  <div className="flex items-center justify-center text-white/60 text-sm">
-                    <Eye className="w-4 h-4 mr-2" />
-                    Solo consulta
-                  </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleViewDetails(vehiculo)}
+                    className="flex-1"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Ver Detalles
+                  </Button>
                 </div>
               </Card>
             </motion.div>
           ))}
         </motion.div>
       )}
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedVehiculo(null);
+        }}
+        vehiculo={selectedVehiculo || undefined}
+        type="vehiculo"
+      />
     </motion.div>
   );
 };

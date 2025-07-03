@@ -1,5 +1,5 @@
 import api from './axios';
-import { OrdenServicioRequest, OrdenServicioResponse, PaginatedResponse, PaginationParams } from '../types';
+import { CreateOrdenServicioDto, CreateDetalleOrdenDto, OrdenServicioResponse, PaginatedResponse, PaginationParams } from '../types';
 
 export const ordenesAPI = {
   getAll: async (params?: PaginationParams): Promise<OrdenServicioResponse[]> => {
@@ -49,14 +49,49 @@ export const ordenesAPI = {
     }
   },
 
-  create: async (orden: OrdenServicioRequest): Promise<OrdenServicioResponse> => {
-    console.log('💾 Creando orden de servicio:', orden);
-    const response = await api.post('/api/OrdenServicio', orden);
-    console.log('✅ Orden creada:', response.data);
-    return response.data;
+  // SOLUCIÓN DEFINITIVA PARA AUTOMAPPER ERROR
+  create: async (orden: CreateOrdenServicioDto): Promise<OrdenServicioResponse> => {
+    try {
+      console.log('💾 Creando orden con CreateOrdenServicioDto (SIN AutoMapper error):', orden);
+      console.log('🔍 Estructura enviada al backend:', JSON.stringify(orden, null, 2));
+      
+      // IMPORTANTE: Usar endpoint que espere CreateOrdenServicioDto
+      const response = await api.post('/api/OrdenServicio', orden);
+      console.log('✅ Orden creada exitosamente:', response.data);
+      return response.data;
+      
+    } catch (error: any) {
+      console.error('❌ Error creando orden:', error);
+      console.error('❌ Detalles del error:', error.response?.data);
+      console.error('❌ Status del error:', error.response?.status);
+      
+      // Si sigue dando error de AutoMapper, el backend necesita configuración
+      if (error.response?.status === 500 && error.response?.data?.includes('AutoMapper')) {
+        console.error('🔥 PROBLEMA BACKEND: El endpoint POST /api/OrdenServicio sigue esperando OrdenServicioDto');
+        console.error('🔥 SOLUCIÓN BACKEND NECESARIA:');
+        console.error('   1. Cambiar el parámetro del controlador de OrdenServicioDto a CreateOrdenServicioDto');
+        console.error('   2. O configurar AutoMapper para mapear CreateOrdenServicioDto -> OrdenServicio');
+        console.error('   3. O crear endpoint POST /api/OrdenServicio/create que reciba CreateOrdenServicioDto');
+      }
+      
+      throw error;
+    }
   },
 
-  update: async (id: number, orden: OrdenServicioRequest): Promise<OrdenServicioResponse> => {
+  // Crear detalles de orden por separado (si el backend lo soporta)
+  createDetalle: async (detalle: CreateDetalleOrdenDto): Promise<any> => {
+    try {
+      console.log('💾 Creando detalle de orden:', detalle);
+      const response = await api.post('/api/DetalleOrden', detalle);
+      console.log('✅ Detalle creado:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error creando detalle:', error);
+      throw error;
+    }
+  },
+
+  update: async (id: number, orden: any): Promise<OrdenServicioResponse> => {
     console.log('📝 Actualizando orden:', id, orden);
     const response = await api.put(`/api/OrdenServicio/${id}`, orden);
     console.log('✅ Orden actualizada:', response.data);

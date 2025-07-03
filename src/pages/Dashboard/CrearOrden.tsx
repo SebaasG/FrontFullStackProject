@@ -13,7 +13,7 @@ import { repuestosAPI } from '../../api/repuestos';
 import { ordenesAPI } from '../../api/ordenes';
 import { usuariosAPI } from '../../api/usuarios';
 import { tiposServicioAPI } from '../../api/tiposServicio';
-import { ClienteResponse, VehiculoResponse, RepuestoResponse, UsuarioResponse, TipoServicioResponse, OrdenServicioDto, DetalleOrdenDto, FacturaDto, DetalleOrdenRequest } from '../../types';
+import { ClienteResponse, VehiculoResponse, RepuestoResponse, UsuarioResponse, TipoServicioResponse, CreateOrdenServicioDto, CreateDetalleOrdenDto, DetalleOrdenRequest } from '../../types';
 import toast from 'react-hot-toast';
 
 interface OrdenFormData {
@@ -62,11 +62,10 @@ const CrearOrden: React.FC = () => {
       setLoading(true);
       console.log('🔄 Cargando datos iniciales para crear orden...');
       
-      // Cargar datos en paralelo con manejo robusto de errores
       const [clientesData, repuestosData, mecanicosData, tiposServicioData] = await Promise.allSettled([
         clientesAPI.getAll(),
         repuestosAPI.getAll(),
-        usuariosAPI.getAll(), // Cambié a getAll() para obtener todos los usuarios
+        usuariosAPI.getMecanicos(), // USAR getMecanicos() que filtra SOLO rolUsuarioId = 2
         tiposServicioAPI.getAll()
       ]);
       
@@ -96,19 +95,10 @@ const CrearOrden: React.FC = () => {
         toast.error('Error al cargar repuestos');
       }
       
-      // Procesar mecánicos - CRÍTICO - Filtrar aquí en el frontend
+      // Procesar mecánicos - USAR getMecanicos() que ya filtra correctamente por rolUsuarioId = 2
       if (mecanicosData.status === 'fulfilled') {
-        const todosUsuarios = mecanicosData.value;
-        console.log('🔧 Todos los usuarios desde API:', todosUsuarios);
-        
-        // Filtrar mecánicos en el frontend
-        const mecanicosResult = todosUsuarios.filter(usuario => {
-          const esMecanico = usuario.rolUsuarioId === 2;
-          console.log(`👤 Usuario ${usuario.nombre}: rolId=${usuario.rolUsuarioId}, esMecanico=${esMecanico}`);
-          return esMecanico;
-        });
-        
-        console.log('🔧 Mecánicos filtrados:', mecanicosResult);
+        const mecanicosResult = mecanicosData.value;
+        console.log('🔧 Mecánicos obtenidos directamente (SOLO rolUsuarioId = 2):', mecanicosResult);
         setMecanicos(mecanicosResult);
         console.log('✅ Mecánicos cargados:', mecanicosResult.length);
         
@@ -116,12 +106,12 @@ const CrearOrden: React.FC = () => {
           console.log('⚠️ No se encontraron mecánicos en la base de datos');
           toast.error('No se encontraron mecánicos disponibles. Verifica que existan usuarios con rol de mecánico (rolUsuarioId = 2).');
         } else {
-          console.log('🎉 Mecánicos disponibles para asignar:', mecanicosResult.map(m => `${m.nombre} (ID: ${m.id})`));
+          console.log('🎉 Mecánicos disponibles para asignar:', mecanicosResult.map(m => `${m.nombre} (ID: ${m.id}, Rol: ${m.rolUsuarioId})`));
         }
       } else {
-        console.error('❌ Error cargando usuarios:', mecanicosData.reason);
+        console.error('❌ Error cargando mecánicos:', mecanicosData.reason);
         setMecanicos([]);
-        toast.error('Error al cargar usuarios');
+        toast.error('Error al cargar mecánicos');
       }
       
       // Procesar tipos de servicio
@@ -133,7 +123,6 @@ const CrearOrden: React.FC = () => {
         console.log('✅ Tipos de servicio cargados:', tiposArray.length);
       } else {
         console.error('❌ Error cargando tipos de servicio:', tiposServicioData.reason);
-        // Si no hay tipos de servicio, crear algunos por defecto
         const tiposEjemplo = [
           { id: 1, nombre: 'Mantenimiento General', ordenServiciosIds: [] },
           { id: 2, nombre: 'Reparación de Motor', ordenServiciosIds: [] },
@@ -244,7 +233,7 @@ const CrearOrden: React.FC = () => {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      console.log('💾 Creando orden de servicio...');
+      console.log('💾 Creando orden de servicio con CreateOrdenServicioDto...');
       
       const selectedCliente = clientes.find(c => c.id === formData.clienteId);
       const selectedVehiculo = vehiculos.find(v => v.id === formData.vehiculoId);
@@ -266,33 +255,42 @@ const CrearOrden: React.FC = () => {
         return;
       }
 
-      // ESTRUCTURA EXACTA DEL SWAGGER - OrdenServicioDto
-      const ordenRequest: OrdenServicioDto = {
-        id: 0, // Se asigna automáticamente
+      // PASO 1: Crear orden con CreateOrdenServicioDto (SIN AutoMapper error)
+      const ordenSimple: CreateOrdenServicioDto = {
         vehiculoId: formData.vehiculoId,
-        vehiculoDescripcion: `${selectedVehiculo.marca} ${selectedVehiculo.modelo} ${selectedVehiculo.year}`,
         tipoServicioId: formData.tipoServicioId,
-        tipoServicioNombre: selectedTipoServicio.nombre,
         usuarioId: formData.usuarioId,
-        usuarioNombre: selectedMecanico.nombre,
         fechaIngreso: new Date().toISOString(),
         fechaEstimada: new Date(formData.fechaEstimada).toISOString(),
-        detalleOrdenes: formData.detalleOrdenes.map(detalle => ({
-          id: 0, // Se asigna automáticamente
-          ordenServicioId: 0, // Se asigna automáticamente
-          repuestoId: detalle.repuestoId,
-          repuestoNombre: detalle.repuestoNombre,
-          cantidad: detalle.cantidad,
-          precioTotal: detalle.precioTotal,
-        })),
-        facturas: [], // Vacío inicialmente
       };
 
-      console.log('📋 Datos de la orden (estructura OrdenServicioDto completa):', ordenRequest);
-      console.log('🔍 JSON enviado al backend:', JSON.stringify(ordenRequest, null, 2));
+      console.log('📋 Creando orden con CreateOrdenServicioDto (SIN AutoMapper error):', ordenSimple);
+      console.log('🔍 JSON enviado al backend:', JSON.stringify(ordenSimple, null, 2));
       
-      const ordenCreada = await ordenesAPI.create(ordenRequest);
+      const ordenCreada = await ordenesAPI.create(ordenSimple);
       console.log('✅ Orden creada exitosamente:', ordenCreada);
+      
+      // PASO 2: Crear detalles de repuestos por separado (si los hay)
+      if (formData.detalleOrdenes.length > 0) {
+        console.log('📦 Creando detalles de repuestos...');
+        
+        for (const detalle of formData.detalleOrdenes) {
+          const detalleDto: CreateDetalleOrdenDto = {
+            ordenServicioId: ordenCreada.id,
+            repuestoId: detalle.repuestoId,
+            cantidad: detalle.cantidad,
+            precioTotal: detalle.precioTotal,
+          };
+          
+          try {
+            await ordenesAPI.createDetalle(detalleDto);
+            console.log(`✅ Detalle creado: ${detalle.repuestoNombre}`);
+          } catch (detalleError) {
+            console.warn(`⚠️ Error creando detalle ${detalle.repuestoNombre}:`, detalleError);
+            // Continuar con los demás detalles
+          }
+        }
+      }
       
       toast.success('¡Orden de servicio creada exitosamente!');
       
@@ -312,13 +310,15 @@ const CrearOrden: React.FC = () => {
       console.error('❌ Error creando orden:', error);
       console.error('❌ Detalles del error:', error.response?.data);
       console.error('❌ Status del error:', error.response?.status);
-      console.error('❌ Headers del error:', error.response?.headers);
       
       // Manejo específico del error 500 de AutoMapper
       if (error.response?.status === 500) {
         if (error.response?.data?.includes('AutoMapper')) {
-          toast.error('Error de mapeo en el servidor. El backend necesita configurar AutoMapper correctamente.');
-          console.error('🔥 SOLUCIÓN BACKEND: Configurar AutoMapper para OrdenServicioDto -> OrdenServicio');
+          toast.error('Error de AutoMapper en el backend. El controlador necesita usar CreateOrdenServicioDto.');
+          console.error('🔥 SOLUCIÓN BACKEND NECESARIA:');
+          console.error('   1. Cambiar el parámetro del controlador POST de OrdenServicioDto a CreateOrdenServicioDto');
+          console.error('   2. O configurar AutoMapper para mapear CreateOrdenServicioDto -> OrdenServicio');
+          console.error('   3. O crear endpoint POST /api/OrdenServicio/simple que reciba CreateOrdenServicioDto');
         } else {
           toast.error('Error interno del servidor. Verifica la configuración del backend.');
         }
@@ -381,7 +381,7 @@ const CrearOrden: React.FC = () => {
             Crear Orden de Servicio
           </h1>
           <p className="text-white/70 mt-2">
-            Gestión de órdenes de servicio para recepcionistas
+            Gestión completa de órdenes de servicio con repuestos
           </p>
         </div>
       </div>
@@ -403,7 +403,7 @@ const CrearOrden: React.FC = () => {
             </span>
           </div>
           <div>
-            <span className="text-blue-200">Mecánicos:</span>
+            <span className="text-blue-200">Mecánicos (SOLO ID=2):</span>
             <span className={`ml-2 font-bold ${mecanicos.length > 0 ? 'text-green-400' : 'text-red-400'}`}>
               {mecanicos.length}
             </span>
@@ -417,7 +417,7 @@ const CrearOrden: React.FC = () => {
         </div>
         {mecanicos.length > 0 && (
           <div className="mt-2">
-            <span className="text-blue-200">Mecánicos disponibles:</span>
+            <span className="text-blue-200">Mecánicos disponibles (SOLO rolUsuarioId = 2):</span>
             <span className="ml-2 text-green-400">
               {mecanicos.map(m => `${m.nombre} (ID: ${m.id}, Rol: ${m.rolUsuarioId})`).join(', ')}
             </span>
@@ -612,7 +612,7 @@ const CrearOrden: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-2">
-                  Mecánico Asignado *
+                  Mecánico Asignado * (SOLO rolUsuarioId = 2)
                 </label>
                 <select
                   value={formData.usuarioId}
@@ -623,13 +623,13 @@ const CrearOrden: React.FC = () => {
                   <option value={0}>Seleccionar mecánico</option>
                   {mecanicos.map((mecanico) => (
                     <option key={mecanico.id} value={mecanico.id} className="bg-gray-800">
-                      {mecanico.nombre} - {mecanico.correo}
+                      {mecanico.nombre} - {mecanico.correo} (Rol: {mecanico.rolUsuarioId})
                     </option>
                   ))}
                 </select>
                 {mecanicos.length === 0 && (
                   <p className="text-red-400 text-sm mt-1">
-                    ⚠️ No hay mecánicos disponibles. Verifica que existan usuarios con rol de mecánico (rolUsuarioId = 2).
+                    ⚠️ No hay mecánicos disponibles. Verifica que existan usuarios con rolUsuarioId = 2.
                   </p>
                 )}
               </div>

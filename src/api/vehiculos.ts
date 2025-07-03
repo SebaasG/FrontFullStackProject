@@ -9,16 +9,46 @@ export const vehiculosAPI = {
       console.log('📦 Respuesta API vehículos:', response.data);
       
       // Manejar diferentes estructuras de respuesta del backend
+      let vehiculosData: VehiculoResponse[] = [];
+      
       if (Array.isArray(response.data)) {
-        return response.data;
+        vehiculosData = response.data;
       } else if (response.data.data && Array.isArray(response.data.data)) {
-        return response.data.data;
+        vehiculosData = response.data.data;
       } else if (response.data.items && Array.isArray(response.data.items)) {
-        return response.data.items;
+        vehiculosData = response.data.items;
       } else {
         console.warn('⚠️ Estructura de respuesta inesperada:', response.data);
-        return [];
+        vehiculosData = [];
       }
+
+      // CRÍTICO: Enriquecer con información del cliente si no viene del backend
+      const vehiculosEnriquecidos = await Promise.all(
+        vehiculosData.map(async (vehiculo) => {
+          // Si ya tiene clienteNombre, no hacer nada
+          if (vehiculo.clienteNombre && vehiculo.clienteNombre !== 'Cliente no encontrado') {
+            return vehiculo;
+          }
+
+          // Si no tiene clienteNombre, intentar obtenerlo
+          try {
+            const clienteResponse = await api.get(`/api/Cliente/${vehiculo.clienteId}`);
+            return {
+              ...vehiculo,
+              clienteNombre: clienteResponse.data.nombre || 'Cliente no encontrado'
+            };
+          } catch (error) {
+            console.warn(`⚠️ No se pudo obtener cliente ${vehiculo.clienteId}:`, error);
+            return {
+              ...vehiculo,
+              clienteNombre: 'Cliente no encontrado'
+            };
+          }
+        })
+      );
+      
+      console.log('✅ Vehículos enriquecidos:', vehiculosEnriquecidos);
+      return vehiculosEnriquecidos;
     } catch (error) {
       console.error('❌ Error en vehiculosAPI.getAll:', error);
       throw error;
@@ -27,7 +57,20 @@ export const vehiculosAPI = {
 
   getById: async (id: number): Promise<VehiculoResponse> => {
     const response = await api.get(`/api/Vehiculo/${id}`);
-    return response.data;
+    let vehiculo = response.data;
+
+    // Enriquecer con información del cliente si no viene
+    if (!vehiculo.clienteNombre || vehiculo.clienteNombre === 'Cliente no encontrado') {
+      try {
+        const clienteResponse = await api.get(`/api/Cliente/${vehiculo.clienteId}`);
+        vehiculo.clienteNombre = clienteResponse.data.nombre;
+      } catch (error) {
+        console.warn(`⚠️ No se pudo obtener cliente ${vehiculo.clienteId}:`, error);
+        vehiculo.clienteNombre = 'Cliente no encontrado';
+      }
+    }
+
+    return vehiculo;
   },
 
   getByCliente: async (clienteId: number): Promise<VehiculoResponse[]> => {
@@ -36,13 +79,38 @@ export const vehiculosAPI = {
       const response = await api.get(`/api/Vehiculo?clienteId=${clienteId}`);
       console.log('📦 Vehículos del cliente:', response.data);
       
+      let vehiculosData: VehiculoResponse[] = [];
+      
       if (Array.isArray(response.data)) {
-        return response.data;
+        vehiculosData = response.data;
       } else if (response.data.data && Array.isArray(response.data.data)) {
-        return response.data.data;
+        vehiculosData = response.data.data;
       } else {
-        return [];
+        vehiculosData = [];
       }
+
+      // Enriquecer con información del cliente
+      const vehiculosEnriquecidos = await Promise.all(
+        vehiculosData.map(async (vehiculo) => {
+          if (!vehiculo.clienteNombre || vehiculo.clienteNombre === 'Cliente no encontrado') {
+            try {
+              const clienteResponse = await api.get(`/api/Cliente/${vehiculo.clienteId}`);
+              return {
+                ...vehiculo,
+                clienteNombre: clienteResponse.data.nombre
+              };
+            } catch (error) {
+              return {
+                ...vehiculo,
+                clienteNombre: 'Cliente no encontrado'
+              };
+            }
+          }
+          return vehiculo;
+        })
+      );
+
+      return vehiculosEnriquecidos;
     } catch (error) {
       console.error('❌ Error obteniendo vehículos del cliente:', error);
       throw error;

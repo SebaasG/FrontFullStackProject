@@ -6,6 +6,7 @@ import { AuditoriaResponse } from '../../types';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -16,6 +17,8 @@ const AuditoriaPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEntidad, setFilterEntidad] = useState('');
   const [filterAccion, setFilterAccion] = useState('');
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedAuditoria, setSelectedAuditoria] = useState<AuditoriaResponse | null>(null);
 
   useEffect(() => {
     loadAuditoria();
@@ -121,6 +124,11 @@ const AuditoriaPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewDetails = (registro: AuditoriaResponse) => {
+    setSelectedAuditoria(registro);
+    setIsDetalleModalOpen(true);
   };
 
   const filteredAuditoria = auditoria.filter(registro => {
@@ -352,7 +360,11 @@ const AuditoriaPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <Button variant="secondary" size="sm">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => handleViewDetails(registro)}
+                  >
                     <Eye className="w-4 h-4 mr-1" />
                     Detalles
                   </Button>
@@ -362,6 +374,84 @@ const AuditoriaPage: React.FC = () => {
           ))}
         </motion.div>
       )}
+
+      {/* Detalle Modal */}
+      <Modal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedAuditoria(null);
+        }}
+        title={`Registro de Auditoría #${selectedAuditoria?.id}`}
+        size="lg"
+      >
+        {selectedAuditoria && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-3">Información de la Acción</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Entidad:</span>
+                    <span className="text-white font-medium">{selectedAuditoria.entidad}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Acción:</span>
+                    <span className={`px-2 py-1 rounded text-xs border ${getAccionColor(selectedAuditoria.accion)}`}>
+                      {selectedAuditoria.accion}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">ID Registro:</span>
+                    <span className="text-white">{selectedAuditoria.id}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-3">Información del Usuario</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Usuario:</span>
+                    <span className="text-white font-medium">{selectedAuditoria.usuarioNombre}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">ID Usuario:</span>
+                    <span className="text-white">{selectedAuditoria.usuarioId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/60">Fecha y Hora:</span>
+                    <span className="text-white">
+                      {new Date(selectedAuditoria.fecha).toLocaleString('es-CO', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+              <h3 className="text-lg font-semibold text-white mb-3">Resumen de la Actividad</h3>
+              <p className="text-white/80">
+                El usuario <strong>{selectedAuditoria.usuarioNombre}</strong> realizó la acción{' '}
+                <strong>{selectedAuditoria.accion}</strong> en la entidad{' '}
+                <strong>{selectedAuditoria.entidad}</strong> el día{' '}
+                {new Date(selectedAuditoria.fecha).toLocaleDateString('es-CO', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })} a las {new Date(selectedAuditoria.fecha).toLocaleTimeString('es-CO')}.
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </motion.div>
   );
 };

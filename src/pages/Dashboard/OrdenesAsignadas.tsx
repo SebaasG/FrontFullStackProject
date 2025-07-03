@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wrench, Clock, CheckCircle, AlertCircle, Car, User, Calendar, Play, Check } from 'lucide-react';
+import { Wrench, Clock, CheckCircle, AlertCircle, Car, User, Calendar, Play, Check, Eye } from 'lucide-react';
 import { ordenesAPI } from '../../api/ordenes';
 import { OrdenServicioResponse } from '../../types';
 import { useAuth } from '../../auth/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatusBadge from '../../components/ui/StatusBadge';
+import DetalleModal from '../../components/ui/DetalleModal';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
 
@@ -15,6 +17,8 @@ const OrdenesAsignadas: React.FC = () => {
   const [ordenes, setOrdenes] = useState<OrdenServicioResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingEstado, setUpdatingEstado] = useState<number | null>(null);
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedOrden, setSelectedOrden] = useState<OrdenServicioResponse | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -67,32 +71,9 @@ const OrdenesAsignadas: React.FC = () => {
     }
   };
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'En Proceso':
-        return 'bg-accent-orange/20 text-accent-orange border-accent-orange/30';
-      case 'Pendiente':
-        return 'bg-primary-electric/20 text-primary-electric border-primary-electric/30';
-      case 'Completada':
-        return 'bg-accent-green/20 text-accent-green border-accent-green/30';
-      case 'Cancelada':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default:
-        return 'bg-white/20 text-white border-white/30';
-    }
-  };
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'En Proceso':
-        return <Clock className="w-4 h-4" />;
-      case 'Pendiente':
-        return <AlertCircle className="w-4 h-4" />;
-      case 'Completada':
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <Wrench className="w-4 h-4" />;
-    }
+  const handleViewDetails = (orden: OrdenServicioResponse) => {
+    setSelectedOrden(orden);
+    setIsDetalleModalOpen(true);
   };
 
   const getPrioridadColor = (fechaEstimada: string) => {
@@ -279,10 +260,7 @@ const OrdenesAsignadas: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm border flex items-center gap-2 ${getEstadoColor(orden.estado)}`}>
-                      {getEstadoIcon(orden.estado)}
-                      {orden.estado}
-                    </span>
+                    <StatusBadge status={orden.estado as any} />
                     <span className={`px-3 py-1 rounded-full text-sm border ${getPrioridadColor(orden.fechaEstimada)}`}>
                       {getPrioridadLabel(orden.fechaEstimada)}
                     </span>
@@ -344,6 +322,15 @@ const OrdenesAsignadas: React.FC = () => {
                   </div>
                   
                   <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleViewDetails(orden)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Ver Detalles
+                    </Button>
+                    
                     {orden.estado === 'Pendiente' && (
                       <Button
                         variant="primary"
@@ -368,12 +355,6 @@ const OrdenesAsignadas: React.FC = () => {
                         Completar
                       </Button>
                     )}
-                    {orden.estado === 'En Proceso' && (
-                      <div className="flex items-center gap-2 text-accent-orange">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm">En progreso...</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </motion.div>
@@ -381,6 +362,17 @@ const OrdenesAsignadas: React.FC = () => {
           </motion.div>
         </Card>
       )}
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedOrden(null);
+        }}
+        orden={selectedOrden || undefined}
+        type="orden"
+      />
     </motion.div>
   );
 };

@@ -10,8 +10,9 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   className?: string;
+  showCloseButton?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -21,12 +22,14 @@ const Modal: React.FC<ModalProps> = ({
   children,
   size = 'md',
   className,
+  showCloseButton = true,
 }) => {
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
+    full: 'max-w-7xl',
   };
 
   return (
@@ -43,10 +46,10 @@ const Modal: React.FC<ModalProps> = ({
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               className={cn(
-                'w-full glass rounded-2xl border border-white/20 shadow-glass',
+                'w-full glass rounded-2xl border border-white/20 shadow-glass max-h-[90vh] overflow-y-auto',
                 sizeClasses[size],
                 className
               )}
@@ -57,18 +60,20 @@ const Modal: React.FC<ModalProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-black/20 backdrop-blur-md">
                 <h2 className="text-xl font-semibold text-white neon-text">
                   {title}
                 </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="p-2"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
+                {showCloseButton && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    className="p-2"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                )}
               </div>
 
               {/* Content */}

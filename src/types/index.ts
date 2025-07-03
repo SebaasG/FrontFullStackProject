@@ -62,7 +62,26 @@ export interface VehiculoResponse {
   kilometraje: number;
 }
 
-// Orden de Servicio Types - ESTRUCTURA EXACTA DEL SWAGGER
+// ===== SOLUCIÓN PARA AUTOMAPPER ERROR =====
+
+// DTO SIMPLE PARA CREAR ORDEN (basado en tu CreateOrdenServicioDto del backend)
+export interface CreateOrdenServicioDto {
+  vehiculoId: number;
+  tipoServicioId: number;
+  usuarioId: number;
+  fechaIngreso: string; // DateTime ISO
+  fechaEstimada: string; // DateTime ISO
+}
+
+// DTO SIMPLE PARA CREAR DETALLE (basado en tu CreateDetalleOrdenDto del backend)
+export interface CreateDetalleOrdenDto {
+  ordenServicioId: number; // Se asigna después de crear la orden
+  repuestoId: number;
+  cantidad: number;
+  precioTotal: number;
+}
+
+// ESTRUCTURA COMPLETA DEL SWAGGER (solo para lectura)
 export interface OrdenServicioDto {
   id: number;
   vehiculoId: number;
@@ -100,10 +119,6 @@ export interface DetalleOrdenRequest {
   repuestoNombre: string;
   cantidad: number;
   precioTotal: number;
-}
-
-export interface OrdenServicioRequest extends OrdenServicioDto {
-  detalleOrdenes: DetalleOrdenRequest[];
 }
 
 export interface OrdenServicioResponse {

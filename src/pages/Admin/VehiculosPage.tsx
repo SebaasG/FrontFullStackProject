@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit, Trash2, Car, User, Calendar, AlertCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Car, User, Calendar, AlertCircle, Eye } from 'lucide-react';
 import { vehiculosAPI } from '../../api/vehiculos';
 import { clientesAPI } from '../../api/clientes';
 import { VehiculoResponse, VehiculoRequest, ClienteResponse } from '../../types';
@@ -8,6 +8,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -18,6 +19,8 @@ const VehiculosPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedVehiculo, setSelectedVehiculo] = useState<VehiculoResponse | null>(null);
   const [editingVehiculo, setEditingVehiculo] = useState<VehiculoResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<VehiculoRequest>({
@@ -159,6 +162,11 @@ const VehiculosPage: React.FC = () => {
       kilometraje: vehiculo.kilometraje,
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewDetails = (vehiculo: VehiculoResponse) => {
+    setSelectedVehiculo(vehiculo);
+    setIsDetalleModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -393,11 +401,18 @@ const VehiculosPage: React.FC = () => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => handleEdit(vehiculo)}
+                    onClick={() => handleViewDetails(vehiculo)}
                     className="flex-1"
                   >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Editar
+                    <Eye className="w-4 h-4 mr-1" />
+                    Ver
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleEdit(vehiculo)}
+                  >
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="danger"
@@ -518,6 +533,17 @@ const VehiculosPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedVehiculo(null);
+        }}
+        vehiculo={selectedVehiculo || undefined}
+        type="vehiculo"
+      />
     </motion.div>
   );
 };

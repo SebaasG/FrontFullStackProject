@@ -14,7 +14,8 @@ import {
   ClipboardList,
   Shield,
   DollarSign,
-  Activity
+  Activity,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { UserRole } from '../../types';
@@ -51,9 +52,9 @@ const Sidebar: React.FC<SidebarProps> = ({ userRole }) => {
       case 'Recepcionista':
         return [
           { icon: Plus, label: 'Crear Orden', path: '/recepcion/crear-orden' },
-          { icon: Wrench, label: 'Gestionar Órdenes', path: '/recepcion/ordenes' },
-          { icon: Users, label: 'Consultar Clientes', path: '/recepcion/clientes' },
-          { icon: Car, label: 'Consultar Vehículos', path: '/recepcion/vehiculos' },
+          { icon: Eye, label: 'Ver Clientes', path: '/recepcion/clientes' }, // SOLO LECTURA
+          { icon: Eye, label: 'Ver Vehículos', path: '/recepcion/vehiculos' }, // SOLO LECTURA
+          { icon: Eye, label: 'Ver Órdenes', path: '/recepcion/ordenes' }, // SOLO LECTURA
         ];
       case 'Mecánico':
         return [

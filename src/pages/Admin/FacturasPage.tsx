@@ -7,6 +7,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import DetalleModal from '../../components/ui/DetalleModal';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
@@ -16,6 +17,8 @@ const FacturasPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedFactura, setSelectedFactura] = useState<FacturaResponse | null>(null);
   const [editingFactura, setEditingFactura] = useState<FacturaResponse | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<FacturaRequest>({
@@ -127,6 +130,11 @@ const FacturasPage: React.FC = () => {
       valorTotal: factura.valorTotal,
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewDetails = (factura: FacturaResponse) => {
+    setSelectedFactura(factura);
+    setIsDetalleModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -366,7 +374,11 @@ const FacturasPage: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/10">
                   <div className="flex gap-2">
-                    <Button variant="secondary" size="sm">
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={() => handleViewDetails(factura)}
+                    >
                       <Eye className="w-4 h-4 mr-1" />
                       Ver Detalles
                     </Button>
@@ -476,6 +488,17 @@ const FacturasPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedFactura(null);
+        }}
+        factura={selectedFactura || undefined}
+        type="factura"
+      />
     </motion.div>
   );
 };

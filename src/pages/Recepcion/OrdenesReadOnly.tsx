@@ -4,8 +4,11 @@ import { Search, Eye, Wrench, Clock, CheckCircle, AlertCircle } from 'lucide-rea
 import { ordenesAPI } from '../../api/ordenes';
 import { OrdenServicioResponse } from '../../types';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatusBadge from '../../components/ui/StatusBadge';
+import DetalleModal from '../../components/ui/DetalleModal';
 import { fadeInUp, listVariants, listItemVariants } from '../../animations/pageTransitions';
 import toast from 'react-hot-toast';
 
@@ -14,6 +17,8 @@ const OrdenesReadOnly: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('');
+  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
+  const [selectedOrden, setSelectedOrden] = useState<OrdenServicioResponse | null>(null);
 
   useEffect(() => {
     loadOrdenes();
@@ -25,29 +30,11 @@ const OrdenesReadOnly: React.FC = () => {
       console.log('🔄 Cargando órdenes (solo lectura)...');
       
       const response = await ordenesAPI.getAll();
-      console.log('📦 Respuesta API órdenes:', response);
+      console.log('✅ Órdenes cargadas:', response.length);
+      setOrdenes(response);
       
-      // Manejar diferentes estructuras de respuesta del backend
-      let ordenesData: OrdenServicioResponse[] = [];
-      
-      if (Array.isArray(response)) {
-        ordenesData = response;
-      } else if (response.data && Array.isArray(response.data)) {
-        ordenesData = response.data;
-      } else if (response.items && Array.isArray(response.items)) {
-        ordenesData = response.items;
-      } else {
-        console.warn('⚠️ Estructura de respuesta inesperada:', response);
-        ordenesData = [];
-      }
-      
-      console.log('✅ Órdenes procesadas:', ordenesData);
-      setOrdenes(ordenesData);
-      
-      if (ordenesData.length === 0) {
+      if (response.length === 0) {
         toast.info('No hay órdenes registradas');
-      } else {
-        console.log(`✅ ${ordenesData.length} órdenes cargadas correctamente`);
       }
     } catch (error: any) {
       console.error('❌ Error cargando órdenes:', error);
@@ -58,32 +45,9 @@ const OrdenesReadOnly: React.FC = () => {
     }
   };
 
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'En Proceso':
-        return 'bg-accent-orange/20 text-accent-orange border-accent-orange/30';
-      case 'Pendiente':
-        return 'bg-primary-electric/20 text-primary-electric border-primary-electric/30';
-      case 'Completada':
-        return 'bg-accent-green/20 text-accent-green border-accent-green/30';
-      case 'Cancelada':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default:
-        return 'bg-white/20 text-white border-white/30';
-    }
-  };
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'En Proceso':
-        return <Clock className="w-4 h-4" />;
-      case 'Pendiente':
-        return <AlertCircle className="w-4 h-4" />;
-      case 'Completada':
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <Wrench className="w-4 h-4" />;
-    }
+  const handleViewDetails = (orden: OrdenServicioResponse) => {
+    setSelectedOrden(orden);
+    setIsDetalleModalOpen(true);
   };
 
   const filteredOrdenes = ordenes.filter(orden => {
@@ -128,13 +92,14 @@ const OrdenesReadOnly: React.FC = () => {
             Consulta de Órdenes
           </h1>
           <p className="text-white/70 mt-2">
-            Consulta todas las órdenes de servicio ({ordenes.length} registradas)
+            Vista de solo lectura para recepcionistas ({ordenes.length} órdenes)
           </p>
         </div>
         
-        <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg">
-          <Eye className="w-5 h-5 text-primary-electric" />
-          <span className="text-white font-medium">Solo Lectura</span>
+        {/* Indicador de Solo Lectura */}
+        <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg border-accent-orange/30">
+          <Eye className="w-5 h-5 text-accent-orange" />
+          <span className="text-accent-orange font-medium">Solo Lectura</span>
         </div>
       </div>
 
@@ -253,10 +218,7 @@ const OrdenesReadOnly: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm border flex items-center gap-2 ${getEstadoColor(orden.estado)}`}>
-                      {getEstadoIcon(orden.estado)}
-                      {orden.estado}
-                    </span>
+                    <StatusBadge status={orden.estado as any} />
                   </div>
                 </div>
 
@@ -305,20 +267,35 @@ const OrdenesReadOnly: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/10">
                   <div className="flex items-center gap-4 text-sm text-white/60">
-                    <span>Ingreso: {orden.fechaIngreso ? new Date(orden.fechaIngreso).toLocaleDateString() : 'N/A'}</span>
-                    <span>Estimada: {orden.fechaEstimada ? new Date(orden.fechaEstimada).toLocaleDateString() : 'N/A'}</span>
+                    <span>Ingreso: {new Date(orden.fechaIngreso).toLocaleDateString()}</span>
+                    <span>Estimada: {new Date(orden.fechaEstimada).toLocaleDateString()}</span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-white/60 text-sm">
-                    <Eye className="w-4 h-4" />
-                    Solo consulta
-                  </div>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => handleViewDetails(orden)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Ver Detalles
+                  </Button>
                 </div>
               </Card>
             </motion.div>
           ))}
         </motion.div>
       )}
+
+      {/* Detalle Modal */}
+      <DetalleModal
+        isOpen={isDetalleModalOpen}
+        onClose={() => {
+          setIsDetalleModalOpen(false);
+          setSelectedOrden(null);
+        }}
+        orden={selectedOrden || undefined}
+        type="orden"
+      />
     </motion.div>
   );
 };
